@@ -38,7 +38,35 @@ try {
     const body = await page.$eval('img[src^="data:"]', img => img.src)
     const code = await fetch('https://captcha-120546510085.asia-northeast1.run.app', { method: 'POST', body }).then(r => r.text())
     await page.locator('[placeholder="上の画像の数字を入力"]').fill(code)
+
+    // Cloudflareチェックボックス処理
+    await setTimeout(2000)
+    try {
+        const frames = page.frames()
+        for (const frame of frames) {
+            if (frame.url().includes('challenges.cloudflare.com') || frame.url().includes('cloudflare')) {
+                try {
+                    await frame.locator('input[type="checkbox"]').click({ timeout: 5000 })
+                    await setTimeout(3000)
+                    break
+                } catch (_) {}
+            }
+        }
+        // iframeが見つからない場合はページ内のチェックボックスを直接クリック
+        await page.evaluate(() => {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+            for (const cb of checkboxes) {
+                if (!cb.checked) cb.click()
+            }
+        })
+        await setTimeout(2000)
+    } catch (e) {
+        console.log('Cloudflare checkbox error (continuing):', e.message)
+    }
+
     await page.locator('text=無料VPSの利用を継続する').click()
+    await page.waitForNavigation({ waitUntil: 'networkidle2' })
+    console.log('✅ 更新完了！')
 } catch (e) {
     console.error(e)
 } finally {
