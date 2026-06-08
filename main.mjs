@@ -14,7 +14,9 @@ const { browser, page } = await connect({
     args,
     customConfig: {},
     turnstile: true,
-    connectOption: {},
+    connectOption: {
+        defaultViewport: { width: 1920, height: 1080 }
+    },
     disableXvfb: false,
     ignoreAllFlags: false,
 })
