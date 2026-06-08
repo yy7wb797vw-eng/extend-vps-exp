@@ -37,17 +37,15 @@ try {
     await page.locator('text=ログインする').click()
     await page.waitForNavigation({ waitUntil: 'networkidle2' })
     await page.locator('a[href^="/xapanel/xvps/server/detail?id="]').click()
+    await page.waitForNavigation({ waitUntil: 'networkidle2' })
     await page.locator('text=更新する').click()
     await page.locator('text=引き続き無料VPSの利用を継続する').click()
     await page.waitForNavigation({ waitUntil: 'networkidle2' })
-
     const body = await page.$eval('img[src^="data:"]', img => img.src)
     const code = await fetch('https://captcha-120546510085.asia-northeast1.run.app', { method: 'POST', body }).then(r => r.text())
     await page.locator('[placeholder="上の画像の数字を入力"]').fill(code)
-
-    // Cloudflare Turnstile自動解決を待つ
-    await setTimeout(5000)
-
+    // Cloudflare Turnstile自動解決を待つ（puppeteer-real-browserが自動処理）
+    await setTimeout(8000)
     await page.locator('text=無料VPSの利用を継続する').click()
     await page.waitForNavigation({ waitUntil: 'networkidle2' })
     console.log('✅ 更新完了！')
