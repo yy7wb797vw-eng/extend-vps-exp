@@ -41,11 +41,43 @@ try {
     await page.locator('text=更新する').click()
     await page.locator('text=引き続き無料VPSの利用を継続する').click()
     await page.waitForNavigation({ waitUntil: 'networkidle2' })
+
+    // CAPTCHA処理
     const body = await page.$eval('img[src^="data:"]', img => img.src)
     const code = await fetch('https://captcha-120546510085.asia-northeast1.run.app', { method: 'POST', body }).then(r => r.text())
-    await page.locator('[placeholder="上の画像の数字を入力"]').fill(code)
-    // Cloudflare Turnstile自動解決を待つ（puppeteer-real-browserが自動処理）
-    await setTimeout(8000)
+    await page.locator('[placeholder="上の画像の数字を入力"]').fill(code.trim())
+    console.log('CAPTCHA入力:', code.trim())
+    await setTimeout(1000)
+
+    // Cloudflareチェックボックスの位置を取得してクリック
+    const cfBox = await page.evaluate(() => {
+        const iframes = document.querySelectorAll('iframe')
+        for (const iframe of iframes) {
+            const rect = iframe.getBoundingClientRect()
+            if (rect.width > 0 && rect.height > 0) {
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, src: iframe.src }
+            }
+        }
+        return null
+    })
+
+    if (cfBox) {
+        console.log('iframe found:', cfBox)
+        await page.mouse.click(cfBox.x + 25, cfBox.y + cfBox.height / 2)
+        console.log('✅ Cloudflareクリック座標:', cfBox.x + 25, cfBox.y + cfBox.height / 2)
+    } else {
+        console.log('iframe not found, trying direct click')
+        // CAPTCHAフォームの下にあるチェックボックス付近をクリック
+        const inputBox = await page.$eval('[placeholder="上の画像の数字を入力"]', el => {
+            const rect = el.getBoundingClientRect()
+            return { x: rect.x, y: rect.y, height: rect.height }
+        })
+        // 入力欄の下100px付近をクリック
+        await page.mouse.click(inputBox.x + 25, inputBox.y + inputBox.height + 60)
+        console.log('✅ 直接座標クリック')
+    }
+
+    await setTimeout(5000)
     await page.locator('text=無料VPSの利用を継続する').click()
     await page.waitForNavigation({ waitUntil: 'networkidle2' })
     console.log('✅ 更新完了！')
